@@ -1,0 +1,175 @@
+Raspberry pi troubeshootin
+
+1. remote host identification changed
+	
+	rm -f ~/.ssh/known_hosts
+	removes known hosts from ssh file
+
+2. configure i2c
+
+	A
+
+	sudo nano /etc/modprobe.d/raspi-blacklist.conf . 
+	In this file, there is a comment, and two lines. Add a hash before the I2C line, to comment it out.
+
+	Original:
+
+	# blacklist spi and i2c by default (many users don't need them)
+
+	blacklist spi-bcm2708
+	blacklist i2c-bcm2708
+
+	Convert to this:
+
+	# blacklist spi and i2c by default (many users don't need them)
+
+	blacklist spi-bcm2708
+	#blacklist i2c-bcm2708
+
+	B
+
+	The next thing to do is add the I2C module to the kernel. Run the command sudo nano /etc/modules .You should see the following file:
+
+	# /etc/modules: kernel modules to load at boot time.
+	#
+	# This file contains the names of kernel modules that should be loaded
+	# at boot time, one per line. Lines beginning with "#" are ignored.
+	# Parameters can be specified after the module name.
+
+	snd-bcm2835
+
+	This should have the line i2c-dev added to the end.
+
+	Final file:
+
+	# /etc/modules: kernel modules to load at boot time.
+	#
+	# This file contains the names of kernel modules that should be loaded
+	# at boot time, one per line. Lines beginning with "#" are ignored.
+	# Parameters can be specified after the module name.
+
+	snd-bcm2835
+	i2c-dev
+
+	C
+
+	There are a few packages that will need installing to use I2C. The first command to run is 
+	sudo apt-get install i2c-tools
+	If this fails, try running 
+	sudo apt-get update 
+	and try again
+
+	The other package needed can be installed by running 
+	sudo apt-get install python-smbus.
+
+	To configure the software, we will add the Pi user to the I2C access group, by running the command 
+	sudo adduser pi i2c.
+	Now run 
+	sudo reboot to reboot
+	, and test the new software.
+
+3. Checking for any devices on th i2c bus
+
+	i2cdetect -y 0 
+
+	or 
+
+	i2cdetect -y 1
+
+4. wget errors about certificates
+
+	wget insertUrl --no-check-certificate
+
+5. list all the currently running processes 
+
+	ps -ef
+
+kill a process
+
+	sudo kill theProcessID
+
+search for a certain process
+	
+	ps axg | grep partOfNameOfProcess
+
+6. sound issues
+
+	sudo apt-get install alsa-utils
+ 	sudo modprobe snd_bcm2835
+ 	sudo aplay /usr/share/sounds/alsa/Front_Center.wav
+
+7. convert av files
+
+	avconv -i inputFile outputFile
+
+8. play audio
+
+	aplay inputFile
+
+9. pifm commands
+
+	sudo ./pifm left_right.wav 103.3 22050 stereo
+
+	# Example command lines
+	# play an MP3
+	ffmpeg -i input.mp3 -f s16le -ar 22.05k -ac 1 - | sudo ./pifm -106.0
+
+	# Broadcast from a usb microphone (see arecord manual page for config)
+	arecord -d0 -c2 -f S16_LE -r 22050 -twav -Dplughw:1,0 copy | sudo ./pifm -106.0
+
+10. copy files over ssh
+
+	# copy from local machine to remote machine
+	scp localfile user@host:/path/to/whereyouwant/thefile
+
+	## copy from remote machine to local machine
+	scp user@host:/path/to/remotefile localfile
+
+11. check for attached usb devices
+
+	ls /dev/tty*
+
+	arduino normally something like dev/ttyACM0
+
+12. add location to system path variable (works on mac, i assume it will on linux)
+
+	echo 'export PATH=$PATH:/absolute/path/to/directory' >> ~/.bash_profile 
+
+13. manually set date on rpi
+
+	sudo date -s "Jul 5 08:10 2014"
+
+14. crontab
+
+	crontab -l //shows the content of the crontab
+	crontab -e //opens up editor to edit the crontab and add/remove jobs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
