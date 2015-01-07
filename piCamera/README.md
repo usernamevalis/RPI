@@ -1,3 +1,4 @@
 holidayCam
 ======
-Coming soon, code for RPi gif camera
+
+Code for a very simple RPi Gif camera
