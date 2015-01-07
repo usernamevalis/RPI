@@ -144,6 +144,193 @@ search for a certain process
 	crontab -l //shows the content of the crontab
 	crontab -e //opens up editor to edit the crontab and add/remove jobs
 
+	if you ever get this error when trying to edit crontab with 'crontab -e'
+    
+    "/tmp/crontab.gfM9rg: Permission denied
+    Creation of temporary crontab file failed - aborting"
+
+    then run this
+	sudo chmod 1777 /tmp
+
+15. Edit Ntp servers used for time and date settings
+
+	sudo nano /etc/ntp.conf
+
+16. restart Ntp servers
+
+	sudo /etc/init.d/ntp restart
+
+17. Edit time zone
+
+	sudo nano /etc/timezone
+
+18. Internet not working, sharing internet from mac not working
+
+	add this nameserver to the /etc/resolv.conf file
+
+	"nameserver 8.8.8.8"
+
+19. MJPG streamer correct link
+
+	svn co https://svn.code.sf.net/p/mjpg-streamer/code/mjpg-streamer/ mjpg-streamer
+	 
+
+20. Find Raspberry Pi's IP usin nmap
+
+	sudo nmap -sn 172.16.21.0/24
+
+	the Ip address needs to be your subnet range, this command scans all ip's within this range from 0-255.
+	Sudo needs to be used, this way the command returns the mac addresses which it can identify as a raspberry pi's
+
+21. Installing Node-red
+
+    NBNBNBNBNBNBNB!!!!!!!
+
+    node version 10.28+ do not work on rpi!! so install node -version 10.28 using nvm
+    check this site http://sanjo-webdesign.de/2014/08/install-node-js-on-raspberry-pi/
+
+    #!/bin/bash
+ 
+	# 1. Connect to your Raspberry Pi via SSH
+	#    or open a terminal.
+	 
+	# 2. Make sure you have a .bash_profile file:
+	touch ~/.bash_profile
+	 
+	# 3. Install nvm:
+	curl https://raw.githubusercontent.com/creationix/nvm/v0.13.1/install.sh | bash
+	 
+	# 4. Update your shell:
+	source ~/.bash_profile
+	 
+	# 5. Install the latest version of Node.js:
+	nvm install 0.10.28
+	# Version 0.10.29 and 0.10.30 seems
+	# not to work on Raspberry Pi (see [#8062](https://github.com/joyent/node/issues/8062)).
+	 
+	# 6. Let your shell use
+	#    the latest version of Node.js by default:
+	nvm alias default 0.10
+
+    the other i did when i finally got this to work, although i ahvent tested it by itself. Is
+    I downloaded node red on my laptop and copied over to the RPi using scp. I read somewhere that not all the files download when pullin grom git on RPI - i dunno sounds suspect but i havent tried to replicate.
+
+	enter node-red folder
+	cd node-red
+
+	install node modules using npm package manager. nb i had alot of problems when i didnt specify the --production flag
+	npm install --production
+
+	useful libraries/nodes. Sometimes i had to install them one by one not as a single command
+	sudo npm install ntwitter oauth sentiment wordpos xml2js firmata fs.notify serialport feedparser pushbullet irc simple-xmpp redis mongodb
+
+    to run node red. This limits memeory usage and keeps pi from randonly crashing
+    node --max-old-space-size=128 red.js
+
+22. Running NODE_RED on start up
+
+	sudo nano /etc/init.d/node_red
+
+	copy this into the file, and edit the “cd node-red” to point to your installation of node-red
+
+	#! /bin/sh
+# Starts and stops Node-RED
+# /etc/init.d/node-red
+### BEGIN INIT INFO
+# Provides:     node-red
+# Required-Start:       $syslog
+# Required-Stop:        $syslog
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Node-RED initialisation
+### END INIT INFO
+# Can be downloaded and installed in one go by using this command
+# sudo wget -O /tmp/download https://gist.github.com/bigmonkeyboy/9962293/download && sudo tar -zxf /tmp/download --strip-components 1 -C /etc/init.d && sudo update-rc.d node-red defaults
+# Note: this runs as the user called pi
+ 
+PIDFILE=/var/run/nodered.pid
+ 
+#Load up node red when called
+case "$1" in
+ 
+start)
+        echo "Starting Node-Red.."
+        su -l pi -c "cd node-red; screen -dmS red node --max-old-space-size=128 red.’s”
+        echo `screen -ls red | sed -n '2p' | cut -f1 -d.` > $PIDFILE
+# or
+        #nohup node --max-old-space-size=128 red.js > /var/log/node-red.log &
+        #echo $! > $PIDFILE
+;;
+ 
+stop)
+        echo "Stopping Node-Red.."
+        su -l pi -c "screen -S red -X quit"
+# or
+        #kill `cat $PIDFILE`
+        rm -f $PIDFILE
+;;
+ 
+restart)
+        echo "Restarting Node-Red.."
+        $0 stop
+        $0 start
+;;
+*)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+	then make it executable
+	sudo chmod +x /etc/init.d/node_red
+
+	make it run at boot
+	sudo update-rc.d node_red defaults
+
+	to stop it from auto running at reboot
+	update-rc.d -f node_red remove
+
+	and control it with these commands
+	sudo service node_red start
+	sudo service node_red stop
+	sudo service node_red restart
+
+
+23. NPM issues relating to gyp - this is generally rooted to using th latest node version which doesnt work on RPI - use NVM to install node
+
+    remove the tmp folder created by npm in root
+    rm -fr /root/tmp
+
+    then install module with
+    sudo npm install moduleName --unsafe-perm
+    
+        or
+
+    sudo npm install moduleName --no-bin-link --unsafe-perm
+
+24. Give RPI a static IP
+
+25. burn wheezy to disk
+
+	diskutil list
+
+	diskutil unmountDisk /dev/<disk# from diskutil>
+
+	sudo dd bs=1m if=2014-09-09-wheezy-raspbian.img of=/dev/disk#
+
+26. run script at boot
+
+	http://www.stuffaboutcode.com/2012/06/raspberry-pi-run-program-at-start-up.html
+
+27. Access OS on sd card from OSX
+	See site, it has relavent links to installers: http://pi.gbaman.info/?p=328
+
+	This isnt 100% bug free but works to when you want to access files on the os from you mac
+
+	install Fuse for osx
+	when running the installer you must select all 3 options when you get to the  'Installation type' menu (including MacFuse compatability layer)
+
+	once complete install Fuse-ext2 driver then resart you computer and that should work
+
 
 
 
