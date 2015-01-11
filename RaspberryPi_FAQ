@@ -331,10 +331,103 @@ esac
 
 	once complete install Fuse-ext2 driver then resart you computer and that should work
 
+28. Find and kill a process
+
+	finds all running python programs
+    ps aux | grep -i python
+
+    killall insertProgramName
+
+   OR use PID
+   finds process ID (pid) of all running python programs
+   ps -ef | grep python
+
+   kills process using PID
+   kill <PID>
+
+29. UDEV rule to run script when usb is inserted
+	nb make script executable, if having probelms place it in /usr/local/bin
+	
+	Add this to file in the /etc/udev/rules.d/99-myRules.rules
+	ACTION=="add", KERNEL=="sd[a-z]1", RUN+="/usr/local/bin/test.sh"
+
+	create bash script test.sh in the right directory containing:
+	#!/bin/bash
+	echo "test" >> /tmp/test.txt
 
 
+	dont forget to make the script executable with 
+	sudo chmod +x scriptname
 
+	if all is working the /tmp/test.txt file should contain "test". NB access it with sudo  or it might say it does not exist
 
+	reload udev rules right away
+	sudo /etc/init.d/udev restart
+
+    see what udev rules are being run
+	sudo udevadm test /dev/sda1
+
+	udev rules need to run very quickly, long scripts will get cancelled. 
+	to circumvent this you can use 'at'. install it with sudo apt-get install at
+	to use it simply pipe the command to 'at' and set to execute 'now'
+	eg:
+	sudo python script.py | at now
+
+30 writing a bash script
+
+	all bash scripts start with a shebang
+	#!/bin/bash
+
+	add commands like you would write them in terminal ie.
+	echo "hello"
+
+	to exit script when don running add to the bottom of the script
+	exit 0
+
+    make the script executable by running, "+x" makes it executable and accesiable via a program
+    sudo chmod +x scriptName
+
+31. run script at insertion of USB
+
+	create udev rule
+
+	sudo nano /etc/udev/rules.d/81-test.rules  (there are rules to the numbers you use but 81 should be fine for most)
+	(add this to the above file and save)
+	ACTION=="add", KERNEL=="sd[a-z]1", RUN+="/home/pi/testPy.sh"
+
+	this runs the file /home/pi/testPy.sh whenever a flashdisk is inserted
+
+	create the bash script
+
+	sudo nano testPy.sh
+	(add this to file)
+	#!/bin/bash
+	echo "test" >> /tmp/test.txt
+	echo /home/pi/test.py | /usr/bin/at now
+
+	this adds "fuck" to a file at /tmp/test.txt, usefule for debugging, and then runs test.py. do to limited time avaialble
+	to runs script from udev you need to pass off the python or else it will stop halfway through execution. This is don using 'at', at 
+	is kind of like cron, the shell script calls the python script and passes it to 'at' to be exectued in peace and at its own pace
+
+	Make the shell script executble
+	sudo chmod u+x testPy.sh
+
+	Whenever a usb is inserted the udev rule will call the shell script etc. to double check, look at the contents of /tmp/test.txt you should see 'test'. See below for a helpful debugging script to place inside the python script
+
+	sudo nano test.py
+	(add this code and make executable)
+	#!/usr/bin/python2
+	import os
+
+	if __name__ == "__main__":
+    f = file("/tmp/hello.txt", "a")
+    f.write(str(os.environ))
+    f.close()
+
+    sudo nano chmod u+x test.py
+
+    when the usb is inserted you should see 'test' added to /tmp/test.txt, as well as this sort of thing added to /tmp/hello.txt
+    "{'ID_VENDOR_ID': '058f', 'ID_PART_TABLE_TYPE': 'dos', 'ID_USB_INTERFACE_NUM': '00', 'ID_PART_ENTRY_DISK': '8:0', 'ID_REVISION': '8.07', 'UDISKS_PARTITION_SCH"...etc
 
 
 
