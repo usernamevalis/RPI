@@ -76,6 +76,19 @@ Raspberry pi troubeshootin
 
 	i2cdetect -y 1
 
+	aswell  as
+	Check dmesg | grep i2c
+
+	on new OS there is kernel support for the Wolfram audio card which takes up two i2c addresses. to remove this (you dont need it unless you use the audio card) just blacklist the modules. 
+
+	Got to
+	and add these to the blacklist
+	blacklist snd_soc_wm8804
+	blacklist snd_soc_pcm512s
+
+	0x1b will remain but thats fine, shouldnt intefer
+
+
 4. wget errors about certificates
 
 	wget insertUrl --no-check-certificate
@@ -363,6 +376,8 @@ esac
 
 	reload udev rules right away
 	sudo /etc/init.d/udev restart
+	or
+    sudo udevadm control --reload-rules
 
     see what udev rules are being run
 	sudo udevadm test /dev/sda1
@@ -403,7 +418,7 @@ esac
 	(add this to file)
 	#!/bin/bash
 	echo "test" >> /tmp/test.txt
-	echo /home/pi/test.py | /usr/bin/at now
+	/home/pi/test.py | /usr/bin/at now
 
 	this adds "fuck" to a file at /tmp/test.txt, usefule for debugging, and then runs test.py. do to limited time avaialble
 	to runs script from udev you need to pass off the python or else it will stop halfway through execution. This is don using 'at', at 
@@ -429,21 +444,110 @@ esac
     when the usb is inserted you should see 'test' added to /tmp/test.txt, as well as this sort of thing added to /tmp/hello.txt
     "{'ID_VENDOR_ID': '058f', 'ID_PART_TABLE_TYPE': 'dos', 'ID_USB_INTERFACE_NUM': '00', 'ID_PART_ENTRY_DISK': '8:0', 'ID_REVISION': '8.07', 'UDISKS_PARTITION_SCH"...etc
 
+32. Auto mount usb udev
 
+create a new udev rule called /etc/udev/rules.d/11-media-by-label-auto-mount.rules
 
+KERNEL!="sd[a-z][0-9]", GOTO="media_by_label_auto_mount_end"  
+# Import FS infos  
+IMPORT{program}="/sbin/blkid -o udev -p %N"  
+# Get a label if present, otherwise specify one  
+ENV{ID_FS_LABEL}!="", ENV{dir_name}="%E{ID_FS_LABEL}"  
+ENV{ID_FS_LABEL}=="", ENV{dir_name}="usbhd-%k"  
+# Global mount options  
+ACTION=="add", ENV{mount_options}="relatime"  
+# Filesystem-specific mount options  
+ACTION=="add", ENV{ID_FS_TYPE}=="vfat|ntfs", ENV{mount_options}="$env{mount_options},utf8,gid=100,umask=002"  
+# Mount the device  
+ACTION=="add", RUN+="/bin/mkdir -p /media/%E{dir_name}", RUN+="/bin/mount -o $env{mount_options} /dev/%k /media/%E{dir_name}"  
+# Clean up after removal  
+ACTION=="remove", ENV{dir_name}!="", RUN+="/bin/umount -l /media/%E{dir_name}", RUN+="/bin/rmdir /media/%E{dir_name}"  
+# Exit  
+LABEL="media_by_label_auto_mount_end"
 
+33. Add wifi to PI using edimax ew-7811un adaptor
+	DISCLAIMER , i used the GUI to configure the network but from what i can tell this is what it did
+	
+	edit this file
 
+	sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
 
+	and add this to the bottom of the file, save and reboot
 
+	network={
+	
+		ssid="networkNam"
+		psk="networkPassword "
+		proto=RSN
+		key_mgmt=WPA-PSK
+		pairwise=TKIP
+		auth_alg=OPEN
+	}
 
+34. cloning rpi sd card from osx
 
+	find the name of your sd card using the command
+	diskutil list
 
+	in the list find your sd card and find its disk number, ie disk1, or disk2. not the partions ie. disk1s1, disk1s2
+	then clone it using the dd tool
 
+	sudo dd if=/dev/yourDiskNumber of=~/Desktop/raspberrypi.dmg(whaterver you prefer)
 
+35. Write cloned image from computer to sd card
 
+	make sure your card is formatted prorperly
 
+	find sd card disk number using 
+	diskutil list
 
+	then unmount that disk using the disk number
+	diskutil umountDisk /dev/diskNumber
 
+	then burn image to sd card 
+	sudo dd if=~/Desktop/raspberrypi.dmg(or whatever the name of your image) of=/dev/yourdiskName
+
+36. Stream video over web
+
+	https://miguelmota.com/blog/raspberry-pi-camera-board-video-streaming/
+
+37. Wireless internet stuff
+	
+	wifi configuration client
+	wpi_cli
+
+	request DHCP license
+	sudo dhclient -1 wlan0
+
+38. Enable serial GPIO on RPI
+
+	disable getty on rpi (program that displays login screen)
+	in file /etc/inittab, disable : T0:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100 by adding # in the front
+
+	#T0:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100
+
+	To prevents the Raspberry Pi from sending out data to the serial ports when it boots, go to file /boot/cmdline.txt and find the line and remove it:
+
+	console=ttyAMA0,115200 kgdboc=ttyAMA0,115200
+
+	reboot the RPi
+
+	install minicom
+	sudo apt-get install minicom
+
+	install python lib
+	sudo apt-get install python-serial
+
+39. Enable SPI
+
+	remove spi blacklist by adding a # before the spi line in the following file
+	sudo nano /etc/modprobe.d/raspi-blacklist.conf
+
+	add “dtparam=spi=on” to the end of your config.txt and reboot.
+	sudo nano /boot/config.txt
+
+	then reboot
+	sudo reboot
 
 
 
