@@ -505,7 +505,11 @@ LABEL="media_by_label_auto_mount_end"
 	diskutil umountDisk /dev/diskNumber
 
 	then burn image to sd card 
-	sudo dd if=~/Desktop/raspberrypi.dmg(or whatever the name of your image) of=/dev/yourdiskName
+	sudo dd bs=1m if=~/Desktop/raspberrypi.dmg(or whatever the name of your image) of=/dev/yourdiskName
+
+	supposedly changing bs (block size) to 32m speeds up the operation
+
+	CTRL-T to see progress
 
 36. Stream video over web
 
@@ -514,7 +518,7 @@ LABEL="media_by_label_auto_mount_end"
 37. Wireless internet stuff
 	
 	wifi configuration client
-	wpi_cli
+	wpa_cli
 
 	request DHCP license
 	sudo dhclient -1 wlan0
@@ -549,9 +553,145 @@ LABEL="media_by_label_auto_mount_end"
 	then reboot
 	sudo reboot
 
+40. installing node
+	node-red is stillnot supported by latest node (0.12.x) so you need to install a 0.10.x version
+	if you dont need node red then just install the latest node package.  
 
+	To install node 10.36
 
+	 wget http://node-arm.herokuapp.com/node_0.10.36_armhf.deb
 
+	 sudo dpkg -i node_0.10.36_armhf.deb
+
+	once installed you can delete the folder and the .deb installation file it contains
+
+41. install js gpio package
+
+	install node
+
+	npm install onoff
+
+42. confiugre Edimax wifi Adaptor
+
+	Make sure the Raspberry Pi sees the adapter on the USB bus:
+		lsusb
+
+	Edit your network interfaces file (e.g. $ sudo nano /etc/network/interfaces), and make it look like the following:
+
+		auto lo
+		iface lo inet loopback
+
+		auto eth0
+		allow-hotplug eth0
+		iface eth0 inet manual
+
+		auto wlan0
+		allow-hotplug wlan0
+		iface wlan0 inet manual
+		wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
+		iface default inet dhcp
+
+	sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+
+		ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+		update_config=1
+
+		network={
+		  ssid="YOUR_NETWORK_SSID"
+		  psk="YOUR_NETWORK_PASSWORD"
+		  key_mgmt=WPA-PSK
+		}
+
+	Reload the network interface to see if it connects and picks up an IP address: $ sudo service networking restart (also refresh the network interface to ensure it picks up an IP via DHCP with $ sudo ifdown wlan0 && sudo ifup wlan0).
+
+	"Ensuring the adapter doesn't go into sleep mode
+	One of the most annoying things that can happen with a headless wifi-connected computer is the wireless connection dropping, or hanging for 10+ seconds at a time. It seems the Edimax is configured to go into a sleep state after a few seconds of inactivity by default, but this can be disabled pretty easily:"
+
+	Create a configuration file for the adapter: 
+		sudo nano /etc/modprobe.d/8192cu.conf
+	Add the following two lines to the configuration file and save the file:
+		# Disable power management
+		options 8192cu rtw_power_mgnt=0 rtw_enusbss=0
+	Reboot your Raspberry Pi: 
+		sudo reboot
+
+43. Look for usb device
+
+		lsusb
+
+	check for mount point, plug in device and run
+
+		cd /dev/
+		ls
+
+	check list, unplug device and see what is missing, thats your device. This is helpful when looking for an arduino
+
+	the arduino is normally something like
+
+		/dev/ttyACM0	
+
+44. Forverjs run node app like a service
+
+	npm install forever -g 			(-g installs globaly)
+
+	forever start service index.js
+	forever stop service index.js
+
+45. WIFI keep edimax adaptor from going to sleep
+
+	check that your adaptor is using the 8192cu chipset
+
+		sudo lsmod | grep 8192
+		8192cu 551136 0 			-you should see something like this
+
+	You need to then disable the power savings and keep it from going to sleep
+	create the file:
+
+		 /etc/modprobe.d/8192cu.conf
+
+	then add this to is and save - probably reboot	 
+		
+		# prevent power down of wireless when idle
+		options 8192cu rtw_power_mgnt=0 rtw_enusbss=0
+
+46. Plain Node install
+
+	http://doctorbin.tumblr.com/post/53991508909/how-to-install-the-latest-version-of-nodejs-npm
+
+		sudo mkdir /opt/node
+
+		wget http://nodejs.org/dist/v0.10.28/node-v0.10.28-linux-arm-pi.tar.gz
+
+		tar xvzf node-v0.10.28-linux-arm-pi.tar.gz
+
+		sudo cp -r node-v0.10.28-linux-arm-pi/* /opt/node
+
+		sudo ln -s /opt/node/bin/node /usr/local/bin/node
+		sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
+
+		source ~/.bashrc
+
+		node -v
+		npm -v
+
+		
+47. start at boot using forever
+
+	https://gauntface.com/blog/2014/08/28/raspberry-pi-3-node
+
+	NB it forget these steps to make it run at boot
+	from inside the /etc/init.d/ folder run these scripts
+
+	make it run at boot
+	sudo update-rc.d <nameOfScript> defaults
+
+	to stop it from auto running at reboot
+	update-rc.d -f <nameOfScript> remove
+
+	and control it with these commands
+	sudo service <nameOfScript>  start
+	sudo service <nameOfScript> stop
+	
 
 
 
